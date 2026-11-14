@@ -103,7 +103,10 @@ export const login = async (req, res) => {
 
     // Generate JWT
     const token = jwt.sign(
-      { userId: user.id },
+     {
+       userId: user.id,
+       role: user.role,
+   },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
@@ -111,11 +114,12 @@ export const login = async (req, res) => {
     return res.status(200).json({
       message: "Login successful.",
       token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
+    user: {
+  id: user.id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+}
     });
 
   } catch (error) {

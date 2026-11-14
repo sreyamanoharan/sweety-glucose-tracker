@@ -8,6 +8,7 @@ import {
   ChartNoAxesCombined,
   LogOut,
   Heart,
+  Users,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext.jsx";
@@ -16,52 +17,38 @@ const DashboardLayout = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+  const isDoctor = user?.role === "DOCTOR";
+
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
 
-  const navItems = [
-    {
-      name: "Dashboard",
-      path: "/dashboard",
-      icon: LayoutDashboard,
-    },
-    {
-      name: "Add Reading",
-      path: "/readings/add",
-      icon: PlusCircle,
-    },
-    {
-      name: "Reading History",
-      path: "/readings",
-      icon: ClipboardList,
-    },
-    {
-      name: "Reports",
-      path: "/reports",
-      icon: ChartNoAxesCombined,
-    },
+  const patientNavItems = [
+    { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+    { name: "Add Reading", path: "/readings/add", icon: PlusCircle },
+    { name: "Reading History", path: "/readings", icon: ClipboardList },
+    { name: "Reports", path: "/reports", icon: ChartNoAxesCombined },
   ];
+
+  const doctorNavItems = [
+    { name: "Dashboard", path: "/doctor/dashboard", icon: LayoutDashboard },
+    { name: "My Patients", path: "/doctor/patients", icon: Users },
+  ];
+
+  const navItems = isDoctor ? doctorNavItems : patientNavItems;
 
   return (
     <div className="min-h-screen bg-[#F7F7FC] flex">
-
-      {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-100 p-6 hidden md:flex flex-col">
-
         <div className="flex items-center gap-3 mb-12">
           <div className="bg-purple-100 p-3 rounded-xl">
             <Activity className="text-purple-600" size={25} />
           </div>
 
           <div>
-            <h1 className="text-xl font-bold text-gray-800">
-              Sweety
-            </h1>
-            <p className="text-xs text-gray-400">
-              Glucose Tracker
-            </p>
+            <h1 className="text-xl font-bold text-gray-800">Sweety</h1>
+            <p className="text-xs text-gray-400">Glucose Tracker</p>
           </div>
         </div>
 
@@ -73,7 +60,7 @@ const DashboardLayout = () => {
               <NavLink
                 key={item.path}
                 to={item.path}
-                end={item.path === "/dashboard"}
+                end
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-xl transition ${
                     isActive
@@ -90,14 +77,15 @@ const DashboardLayout = () => {
         </nav>
 
         <div className="border-t pt-5">
-          <div className="mb-4">
-            <p className="text-sm font-semibold text-gray-700">
-              {user?.name}
-            </p>
-            <p className="text-xs text-gray-400 truncate">
-              {user?.email}
-            </p>
-          </div>
+          <p className="text-sm font-semibold text-gray-700">
+            {user?.name}
+          </p>
+          <p className="text-xs text-gray-400 truncate mb-1">
+            {user?.email}
+          </p>
+          <p className="text-xs text-purple-600 font-medium mb-4">
+            {isDoctor ? "Doctor" : "Patient"}
+          </p>
 
           <button
             onClick={handleLogout}
@@ -109,13 +97,13 @@ const DashboardLayout = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 min-w-0 p-5 md:p-8">
         <Outlet />
 
         <footer className="mt-10 text-center text-xs text-gray-400">
           <span className="inline-flex items-center gap-1">
-            Made with <Heart size={12} className="text-pink-400" /> Sweety Glucose Tracker
+            Made with <Heart size={12} className="text-pink-400" />
+            Sweety Glucose Tracker
           </span>
         </footer>
       </main>

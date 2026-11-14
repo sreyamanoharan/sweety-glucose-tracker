@@ -17,6 +17,7 @@ const protect = (req, res, next) => {
 
     req.user = {
       userId: decoded.userId,
+      role: decoded.role || "PATIENT",
     };
 
     next();
@@ -25,6 +26,17 @@ const protect = (req, res, next) => {
       message: "Invalid or expired token.",
     });
   }
+};
+
+// Doctor-only authorization
+export const authorizeDoctor = (req, res, next) => {
+  if (req.user.role !== "DOCTOR") {
+    return res.status(403).json({
+      message: "Access denied. Doctor privileges required.",
+    });
+  }
+
+  next();
 };
 
 export default protect;

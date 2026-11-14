@@ -15,12 +15,23 @@ enum ReadingSlot {
   AFTER_DINNER
 }
 
+enum UserRole {
+  PATIENT
+  DOCTOR
+}
+
 model User {
   id        String    @id @default(uuid())
   name      String
   email     String    @unique
   password  String
+  role      UserRole  @default(PATIENT)
+
   readings  Reading[]
+
+  doctorAssignments  DoctorPatient[] @relation("DoctorAssignments")
+  patientAssignments DoctorPatient[] @relation("PatientAssignments")
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -38,4 +49,18 @@ model Reading {
 
   @@unique([userId, date, slot])
   @@index([userId, date])
+}
+
+model DoctorPatient {
+  id        String   @id @default(uuid())
+  doctorId  String
+  patientId String
+  createdAt DateTime @default(now())
+
+  doctor User @relation("DoctorAssignments", fields: [doctorId], references: [id], onDelete: Cascade)
+  patient User @relation("PatientAssignments", fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([doctorId, patientId])
+  @@index([doctorId])
+  @@index([patientId])
 }
