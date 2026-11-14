@@ -1,0 +1,37 @@
+
+services:
+  db:
+    image: postgres:17
+    container_name: sweety-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: sweety_docker_password
+      POSTGRES_DB: sweety_glucose_tracker
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sweety_glucose_tracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./server
+    container_name: sweety-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      PORT: 5000
+      DATABASE_URL: postgresql://postgres:sweety_docker_password@db:5432/sweety_glucose_tracker
+      JWT_SECRET: docker_demo_jwt_secret_change_me
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

@@ -8,6 +8,15 @@ import {
   PlusCircle,
   ArrowRight,
 } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { Link } from "react-router-dom";
 
 import api from "../services/api.js";
@@ -28,6 +37,7 @@ const Dashboard = () => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [chartReadings, setChartReadings] = useState([]);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -37,6 +47,21 @@ const Dashboard = () => {
         });
 
         setReport(response.data);
+        const readingsResponse = await api.get(
+  "/readings?page=1&limit=50"
+);
+
+const chartData = [...readingsResponse.data.readings]
+  .reverse()
+  .map((reading) => ({
+    ...reading,
+    dateLabel: new Date(reading.date).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+    }),
+  }));
+
+setChartReadings(chartData);
       } catch (error) {
         setError(
           error.response?.data?.message ||
@@ -159,6 +184,75 @@ const Dashboard = () => {
           );
         })}
       </div>
+
+
+{/* Glucose Trend Chart */}
+<div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-8">
+  <div className="mb-6">
+    <h2 className="text-lg font-bold text-gray-800">
+      Glucose Trend
+    </h2>
+    <p className="text-sm text-gray-400 mt-1">
+      Your recent glucose measurements
+    </p>
+  </div>
+
+  {loading ? (
+    <p className="text-center text-gray-400 py-12">
+      Loading chart...
+    </p>
+  ) : chartReadings.length > 0 ? (
+    <ResponsiveContainer width="100%" height={300}>
+      <LineChart
+        data={chartReadings}
+        margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+
+        <XAxis
+          dataKey="dateLabel"
+          tick={{ fontSize: 12 }}
+        />
+
+        <YAxis
+          domain={["auto", "auto"]}
+          tick={{ fontSize: 12 }}
+          label={{
+            value: "mg/dL",
+            angle: -90,
+            position: "insideLeft",
+          }}
+        />
+
+        <Tooltip
+          formatter={(value) => [`${value} mg/dL`, "Glucose"]}
+          labelFormatter={(_, payload) => {
+            const reading = payload?.[0]?.payload;
+            return reading
+              ? `${reading.dateLabel} - ${
+                  slotLabels[reading.slot] || reading.slot
+                }`
+              : "";
+          }}
+        />
+
+        <Line
+          type="monotone"
+          dataKey="value"
+          stroke="#9333ea"
+          strokeWidth={3}
+          dot={{ r: 5, fill: "#9333ea" }}
+          activeDot={{ r: 7 }}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  ) : (
+    <p className="text-center text-gray-400 py-12">
+      Add glucose readings to see your trend chart.
+    </p>
+  )}
+</div>
+
 
       {/* Today's readings */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">

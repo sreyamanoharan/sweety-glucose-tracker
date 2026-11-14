@@ -51,23 +51,37 @@ export default function Readings() {
     value: "",
   });
   const [saving, setSaving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+const [totalPages, setTotalPages] = useState(1);
+const [totalReadings, setTotalReadings] = useState(0);
 
-  const fetchReadings = async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const response = await api.get("/readings");
-      setReadings(response.data.readings || response.data);
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to load readings.");
-    } finally {
-      setLoading(false);
-    }
-  };
+const limit = 5;
 
-  useEffect(() => {
-    fetchReadings();
-  }, []);
+  const fetchReadings = async (page = currentPage) => {
+  try {
+    setLoading(true);
+    setError("");
+
+    const response = await api.get(
+      `/readings?page=${page}&limit=${limit}`
+    );
+
+    setReadings(response.data.readings || []);
+    setCurrentPage(response.data.currentPage);
+    setTotalPages(response.data.totalPages);
+    setTotalReadings(response.data.totalReadings);
+  } catch (err) {
+    setError(
+      err.response?.data?.message || "Failed to load readings."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
+useEffect(() => {
+  fetchReadings(currentPage);
+}, [currentPage]);
 
   const handleEdit = (reading) => {
     setEditingReading(reading);
@@ -123,23 +137,28 @@ export default function Readings() {
     }
   };
 
-  const handleDelete = async (id) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this reading?"
-    );
+ const handleDelete = async (id) => {
+  const confirmed = window.confirm(
+    "Are you sure you want to delete this reading?"
+  );
 
-    if (!confirmed) return;
+  if (!confirmed) return;
 
-    try {
-      setError("");
-      await api.delete(`/readings/${id}`);
-      setReadings((previous) =>
-        previous.filter((reading) => reading.id !== id)
-      );
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to delete reading.");
+  try {
+    setError("");
+    await api.delete(`/readings/${id}`);
+
+    if (readings.length === 1 && currentPage > 1) {
+      setCurrentPage((previous) => previous - 1);
+    } else {
+      await fetchReadings(currentPage);
     }
-  };
+  } catch (err) {
+    setError(
+      err.response?.data?.message || "Failed to delete reading."
+    );
+  }
+}; 
 
   if (loading) {
     return (
@@ -336,7 +355,35 @@ export default function Readings() {
               </tbody>
             </table>
           </div>
+       <div className="flex flex-col items-center justify-between gap-4 border-t border-slate-100 bg-white px-6 py-4 sm:flex-row">
+  <p className="text-sm text-slate-500">
+    Showing {readings.length} of {totalReadings} readings
+  </p>
+
+  <div className="flex items-center gap-3">
+    <button
+      onClick={() => setCurrentPage((page) => page - 1)}
+      disabled={currentPage === 1}
+      className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      Previous
+    </button>
+
+    <span className="text-sm font-medium text-slate-700">
+      Page {currentPage} of {totalPages}
+    </span>
+
+    <button
+      onClick={() => setCurrentPage((page) => page + 1)}
+      disabled={currentPage >= totalPages}
+      className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      Next
+    </button>
+  </div>
+</div>
         </div>
+        
       )}
     </div>
   );

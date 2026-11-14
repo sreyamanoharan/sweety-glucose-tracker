@@ -135,20 +135,48 @@ export const createReading = async (req, res) => {
 };
 
 // GET ALL READINGS
+
+// GET ALL READINGS WITH PAGINATION
 export const getReadings = async (req, res) => {
   try {
-    const readings = await prisma.reading.findMany({
-      where: {
-        userId: req.user.userId,
-      },
-      orderBy: [
-        { date: "desc" },
-        { createdAt: "desc" },
-      ],
-    });
+    const userId = req.user.userId;
+
+    // Get pagination parameters from query string
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(
+      50,
+      Math.max(1, parseInt(req.query.limit, 10) || 5)
+    );
+
+    const skip = (page - 1) * limit;
+
+    const where = { userId };
+
+    // Fetch readings and total count simultaneously
+    const [readings, totalReadings] = await Promise.all([
+      prisma.reading.findMany({
+        where,
+        orderBy: [
+          { date: "desc" },
+          { createdAt: "desc" },
+        ],
+        skip,
+        take: limit,
+      }),
+
+      prisma.reading.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(totalReadings / limit);
 
     return res.status(200).json({
-      count: readings.length,
+      count: totalReadings,
+      totalReadings,
+      currentPage: page,
+      totalPages,
+      limit,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
       readings,
     });
   } catch (error) {
@@ -159,6 +187,7 @@ export const getReadings = async (req, res) => {
     });
   }
 };
+
 
 // UPDATE READING
 export const updateReading = async (req, res) => {
