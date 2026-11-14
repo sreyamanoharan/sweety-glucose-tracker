@@ -34,9 +34,9 @@ A full-stack blood glucose tracking application built with React, Node.js, Expre
 - JWT-based authentication
 - Add, view, edit, and delete glucose readings
 - Track readings by date and time slot
-- Validation for glucose values (40–600 mg/dL)
+- Glucose value validation (40–600 mg/dL)
 - Maximum four readings per day
-- Prevent duplicate readings for the same date and slot
+- Prevent duplicate readings for the same date and time slot
 - Prevent future-dated readings
 - Daily glucose report
 - Month-to-date report
@@ -52,7 +52,7 @@ A full-stack blood glucose tracking application built with React, Node.js, Expre
 - Generate daily patient reports
 - Generate month-to-date reports
 - Generate previous-month reports
-- View glucose statistics and readings
+- View patient glucose statistics and readings
 - Restrict report access to assigned patients
 - Read-only access to patient records
 
@@ -61,14 +61,19 @@ A full-stack blood glucose tracking application built with React, Node.js, Expre
 ```text
 sweety-glucose-tracker/
 ├── client/
-│   └── src/
+│   ├── src/
+│   └── .env.example
 ├── server/
 │   ├── config/
 │   ├── controllers/
 │   ├── middleware/
 │   ├── prisma/
+│   │   ├── migrations/
+│   │   ├── seed.js
+│   │   └── createDoctor.js
 │   ├── routes/
 │   ├── tests/
+│   ├── .env.example
 │   ├── app.js
 │   └── server.js
 ├── docker-compose.yml
@@ -78,33 +83,42 @@ sweety-glucose-tracker/
 
 ## Setup Instructions
 
-### 1. Clone the repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/sreyamanoharan/sweety-glucose-tracker.git
+
 cd sweety-glucose-tracker
 ```
 
-### 2. Backend setup
+### 2. Backend Setup
+
+Navigate to the server directory:
 
 ```bash
 cd server
 npm install
 ```
 
-Create a `.env` file using `.env.example` and configure:
+Create a `.env` file by copying `.env.example` and configure the required environment variables:
 
 ```env
 PORT=5000
-DATABASE_URL="your_postgresql_connection_string"
-JWT_SECRET=your_secret_key
+DATABASE_URL=your_postgresql_connection_string
+JWT_SECRET=your_jwt_secret_here
+
+DOCTOR_NAME="Doctor Name"
+DOCTOR_EMAIL=doctor@example.com
+DOCTOR_PASSWORD=your_doctor_password
 ```
 
-### 3. Database setup
+Replace the placeholder values with your own configuration.
+
+### 3. Database Setup
 
 Make sure PostgreSQL is running and the database exists.
 
-Run migrations:
+Run database migrations:
 
 ```bash
 npx prisma migrate deploy
@@ -116,48 +130,54 @@ Generate Prisma Client:
 npx prisma generate
 ```
 
-Seed demo patient data:
+### 4. Seed Demo Patient Data
+
+Run the seed script to create a demo patient account with sample glucose readings:
 
 ```bash
 npm run seed
 ```
 
-### 4. Create a doctor account
+The seed script can be executed again without creating duplicate demo records.
 
-Configure the following environment variables in `server/.env`:
+### 5. Create a Doctor Account
+
+Configure the doctor details in `server/.env`:
 
 ```env
-DOCTOR_NAME="Dr. Sweety"
-DOCTOR_EMAIL="doctor@example.com"
-DOCTOR_PASSWORD="your_doctor_password"
+DOCTOR_NAME="Dr. Demo"
+DOCTOR_EMAIL=doctor@example.com
+DOCTOR_PASSWORD=your_doctor_password
 ```
 
-Run:
+Run the doctor creation script from the `server` directory:
 
 ```bash
 node prisma/createDoctor.js
 ```
 
-### 5. Start the backend
+This creates a doctor account that can log in and access the doctor dashboard.
+
+### 6. Start the Backend
 
 ```bash
 npm run dev
 ```
 
-Backend runs at:
+The backend runs at:
 
 http://localhost:5000
 
-### 6. Frontend setup
+### 7. Frontend Setup
 
-Open another terminal:
+Open another terminal and navigate to the project root:
 
 ```bash
 cd client
 npm install
 ```
 
-Create a `.env` file using `client/.env.example`.
+Create a `.env` file using `client/.env.example` and configure the required frontend environment variables.
 
 Start the frontend:
 
@@ -195,21 +215,31 @@ The React frontend can be started separately using the frontend setup instructio
 
 ## Demo Login
 
-**Patient Account**
+### Patient Account
 
 Email: `demo@sweety.com`
 
 Password: `Demo@12345`
 
-A doctor account can be created using the doctor setup instructions.
+### Doctor Account
 
-## API Routes
+Create a doctor account using the instructions in the Doctor Account Setup section.
+
+The doctor email and password are configured through environment variables.
+
+## API Documentation
+
+All protected endpoints require a valid JWT token in the Authorization header:
+
+```text
+Authorization: Bearer <your_token>
+```
 
 ### Authentication
 
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/api/auth/register` | Register patient |
+| POST | `/api/auth/register` | Register a patient |
 | POST | `/api/auth/login` | Login |
 
 ### Patient Reading Management
@@ -217,9 +247,9 @@ A doctor account can be created using the doctor setup instructions.
 | Method | Endpoint | Description |
 |---|---|---|
 | GET | `/api/readings` | Get readings |
-| POST | `/api/readings` | Add reading |
-| PUT | `/api/readings/:id` | Update reading |
-| DELETE | `/api/readings/:id` | Delete reading |
+| POST | `/api/readings` | Add a reading |
+| PUT | `/api/readings/:id` | Update a reading |
+| DELETE | `/api/readings/:id` | Delete a reading |
 
 ### Patient Reports
 
@@ -244,7 +274,9 @@ A doctor account can be created using the doctor setup instructions.
 | GET | `/api/doctor/patients/:patientId/reports/month-to-date` | Patient month-to-date report |
 | GET | `/api/doctor/patients/:patientId/reports/monthly` | Patient previous-month report |
 
-Doctor report endpoints require a valid doctor token and an existing patient assignment. Report endpoints accept a `date` query parameter in `YYYY-MM-DD` format.
+Doctor report endpoints require a valid doctor token and an existing patient assignment.
+
+Report endpoints accept a `date` query parameter in `YYYY-MM-DD` format.
 
 ## Running Backend Tests
 
@@ -254,15 +286,35 @@ Navigate to the server directory:
 cd server
 ```
 
-Run:
+Run the test suite:
 
 ```bash
 npm test
 ```
 
-The backend test suite covers authentication, glucose readings, reports, doctor APIs, and application endpoints.
+The backend tests cover:
+- Authentication
+- Glucose reading management
+- Patient reports
+- Doctor APIs
+- Application endpoints
 
-**Current test results: 30 tests passed across 5 test suites.**
+**Latest test results: 30 tests passed across 5 test suites.**
+
+## Notes
+
+### Assumptions
+- Each patient can record a maximum of four glucose readings per day.
+- Each reading belongs to one of four predefined time slots.
+- Doctors can access reports only for patients assigned to them.
+- Doctors have read-only access to patient glucose records.
+- Patients can view their own daily and monthly reports.
+
+### Future Improvements
+- Add automated frontend tests.
+- Improve dashboard analytics and visualizations.
+- Add notifications for missing glucose readings.
+- Implement data export functionality.
 
 ## Author
 
